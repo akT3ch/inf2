@@ -1,0 +1,211 @@
+//include libs
+#include <avr/io.h>
+#include <util/delay.h>
+#include <stdio.h>
+#include<time.h>
+//define
+// Hier die verwendete Taktfrequenz in Hz eintragen, wichtig!
+#ifndef F_CPU
+#define F_CPU 8000000
+#endif
+// Pinbelegung für das LCD, an verwendete Pins anpassen
+// Alle LCD Pins müssen an einem Port angeschlossen sein und die 4
+// Datenleitungen müssen auf aufeinanderfolgenden Pins liegen
+#define LCDDR_RS DDRA
+#define LCDDR_E DDRD
+#define LCDDR_D DDRC
+#define LCDPORT_RS PORTA
+#define LCDDPORT_E PORTD
+#define LCDPORT_D PORTC
+#define LCD_E PD6
+#define LCD_RS PA2
+
+////////////////////////////////////////////////////////////////////////////////
+// Erzeugt einen Enable-Puls
+void enable()
+{                               
+    LCDDPORT_E |= (1 << LCD_E); // Enable auf 1 setzen
+    _delay_us(1);
+    LCDDPORT_E &= ~(1 << LCD_E); // Enable auf 0 setzen
+    _delay_us(4100);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// 2 schritt übertragung von Attributwerten
+void lcdCommand(uint8_t c)
+{ 
+    // c in zwei Schritten übertragen
+    LCDPORT_RS &= ~(1 << LCD_RS); // RS-Bit löschen (Befehl!)
+    LCDPORT_D &= 0x0F;            // High-Nibble löschen
+    LCDPORT_D |= (c & 0xF0);      // High-Nibble von c setzen
+    enable();                     // übertragen
+    LCDPORT_D &= 0x0F;            // High-Nibble löschen
+    LCDPORT_D |= (c << 4);        // Low-Nibble von c setzen
+    enable();                     //uebertragen
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Sendet den Befehl zur Löschung des Displays
+void lcdClr(void)
+{                     
+    lcdCommand(0x01); // Befehl CLRHOME
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Setzt den Cursor in Spalte x (0..15) Zeile y (1..4)
+void lcdSetCursor(uint8_t x, uint8_t y)
+{
+    // Die Einträge hier sollten für ein LCD mit einer Zeilenlänge von 16 Zeichen passen
+    uint8_t data;
+    switch (y)
+    {
+        case 1: // 1. Zeile
+            data = 0x80 + 0x00 + x;
+            break;
+        case 2: // 2. Zeile
+            data = 0x80 + 0x40 + x;
+            break;
+        case 3: // 3. Zeile
+            data = 0x80 + 0x10 + x;
+            break;
+        case 4: // 4. Zeile
+            data = 0x80 + 0x50 + x;
+            break;
+        default:
+            return; // für den Fall einer falschen Zeile
+    }
+
+    lcdCommand(data);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+ // c in zwei Schritten übertragen
+void lcdData(uint8_t c)
+{
+    LCDPORT_RS |= (1 << LCD_RS); // RS-Bit auf 1 setzen
+    LCDPORT_D &= 0x0F;           // High-Nibble löschen
+    LCDPORT_D |= (c & 0xF0);     // High-Nibble von c setzen
+    enable();                    // übertragen
+    LCDPORT_D &= 0x0F;           // High-Nibble löschen
+    LCDPORT_D |= (c << 4);       // Low-Nibble von c setzen
+    enable();                    // übertragen
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Schreibt einen String auf das LCD
+void lcdString(const char *data)
+{
+    while (*data != '\0')
+        lcdData(*data++);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Sendet den Befehl: Cursor Home
+void lcdHome(void)
+{
+    lcdCommand(0x02);
+    _delay_ms(2);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void lcdWert(uint32_t z)
+{
+    char s[16];
+    snprintf(s,16, "%ld", z);
+    lcdString(s);
+}
+void lcdWertNull(uint8_t z)
+{
+    char s[16];
+    snprintf(s, 16, "%015d\n", z);
+    lcdString(s);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void init()
+{                              // initial display-setup
+    _delay_ms(15);             // Start-Wartezeit
+    LCDDR_RS |= (1 << LCD_RS); // RS als Ausgang
+    LCDDR_E |= (1 << LCD_E);   // E als Ausgang
+    LCDDR_D |= 0b11110000;     // Bits 4-7 als Ausgang
+    lcdCommand(0x33);          // Überträgt 3 - 3
+    lcdCommand(0x32);          // Überträgt 3 - 2
+    lcdCommand(0x28);          // Function Set, 2 Zeilen & 5x7
+    lcdCommand(0x01);          // Clear Display
+    lcdCommand(0x0c);          // Display an, kein Cursor
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void zahler(uint8_t f, int x, int y){
+    for(uint8_t i = f; i >= 0; i--){
+        _delay_ms(500);
+        lcdClr();
+        lcdSetCursor(x, y);  
+        lcdWert(i);
+        if(i == 0)
+            break;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//main function
+int main()
+{
+    time_t now;
+    time(&now);
+	
+    // Initialisierung des LCD
+    // Nach der Initialisierung müssen auf dem LCD vorhandene schwarze Balken
+    // verschwunden sein
+    init();
+    // Text in einzelnen Zeichen ausgeben
+    lcdData('T');
+    lcdData('e');
+    lcdData('s');
+    lcdData('t');
+    lcdSetCursor(0, 2);        // Die Ausgabemarke in die 2te Zeile setzen
+    lcdString("Hello World!"); // erneut Text ausgeben, aber diesmal komfortabler als String
+
+   // zahler(20, 0, 1);
+
+    int i = 0;
+    _delay_ms(1000);
+    int h = 0;
+    int m = 0;
+    int s1 = 0;
+    int s2 = 0;
+    char ch[12];
+    while (1){
+        lcdClr();
+        lcdSetCursor(4, 2); 
+        if (s1 == 9){
+            s2++;
+            s1 = 0;
+        }
+        if(s2 == 6){
+            m++;
+            s2 = 0;
+        }
+        if(m == 60){
+            h++;
+            m = 0;
+        }
+        if( h == 24)
+            h = 0;
+            s1++;
+        sprintf(ch, "%02d:%02d:%01d%01d", h, m, s2, s1);
+        lcdString(ch);
+        _delay_ms(1000);
+
+        /*
+        time(&now);
+        lcdClr();
+        lcdString(ctime(&now));//lcdString(asctime(&now));
+        _delay_ms(1000);
+        if (i >10)
+            break;
+            */
+    };
+    return 0;
+}
+
