@@ -1,6 +1,5 @@
-http://diskstation:30000/Mikrocontroller/AVRStudio_AVR-Basis-Uhr.git
-http://diskstation:30000/Mikrocontroller/Eclipse_AVR-Basis-Uhr.git
-
+//http://diskstation:30000/Mikrocontroller/AVRStudio_AVR-Basis-Uhr.git
+//http://diskstation:30000/Mikrocontroller/Eclipse_AVR-Basis-Uhr.git
 
 //include libs
 #include <avr/io.h>
