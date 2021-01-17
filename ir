@@ -187,12 +187,11 @@ void stellen(uint8_t s, uint8_t m, uint8_t h){
         }
     }
 
-    lcdSetCursor(10, 2);
-    lcdWert(tmpS);
-    lcdSetCursor(7, 2);
-    lcdWert(tmpM);
-    lcdSetCursor(4, 2);
-    lcdWert(tmpH);
+    char ch[12];
+         lcdSetCursor(4, 2);
+        sprintf(ch, "%02d:%02d:%02d", tmpH, tmpM, tempS);
+        lcdString(ch);
+        _delay_ms(500);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
