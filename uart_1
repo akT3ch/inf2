@@ -1,6 +1,12 @@
 #include <avr/io.h>
-
+#include <avr/interrupt.h>
 #include <util/delay.h>
+#include "lcd.h"
+#define BUFFER 30
+
+char rbuffer[BUFFER];
+volatile uint8_t zEin = 0;
+volatile uint8_t zAus = 0;
 
 void USART_Transmit(unsigned char data)
 {
@@ -16,19 +22,34 @@ unsigned char USART_Receive(void)
     return UDR;
 }
 
+ISR(USART_RXC_vect){
+    zEin++;
+    if(zEin == BUFFER)
+        zEin = 0;
+    if(zEin == zAus)
+        USART_Transmit('*');
+}
+
 int main(void) //()
 {
-    //9600 8 N 1
-    UCSRA = (1 << U2X);                // bit gesetzt =0 wenn nicht gesetz
-    UCSRB = (1 << RXEN) | (1 << TXEN); //TEIL1
+    lcd_init();
+    UCSRA = 0;                // bit gesetzt =0 wenn nicht gesetz
+    UCSRB = (1 << RXCIE) | (1 << RXEN) | (1 << TXEN); //TX, RX einschalten
 
-    UCSRC = (1 << URSEL) | (1 << UCSZ1) | (1 << UCSZ2);
+    UCSRC = (1 << URSEL) | (1 << UCSZ1) | (1 << UCSZ0);
     UBRRH = 0;
-    UBRRL = 103;                         // 51 wenn nicht gesetzt
-    USART_Transmit('#');                 //TEIL1
-    USART_Transmit_string("25.01.2021"); //TEIL1
+    UBRRL = 51;    
+    sei();                    
+    USART_Transmit('#');                 
     while (1)
     {
-        USART_Transmit(USART_Receive()); //TEIL1
+        if(zEin != zAus)
+        {
+            lcd_data(rbuffer[zAus]);
+            zAus++;
+        }
+        if(zAus == BUFFER)
+            zAus = 0;
     }
+    return 0;
 }
