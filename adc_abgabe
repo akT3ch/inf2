@@ -1,0 +1,27 @@
+#include <Arduino.h>
+#include <avr/io.h>
+#include <util/delay.h>
+#include "lcd.h"
+
+uint8_t read(void)
+{
+  ADCSRA |= (1 << ADSC);
+  while (!(ADCSRA & (1 << ADIF)))
+    ;
+  return 5 / 255 * ADCH * 100;
+}
+
+int main(void)
+{
+  ADMUX = (1 << REFS0) | (1 << MUX1) | (1 << MUX2) | (1 << REFS1) | (1 << ADLAR);
+  ADCSRA = (1 << ADPS2) | (1 << ADPS1) | (1 << ADEN);
+
+  lcd_init();
+
+  while (1)
+  {
+    lcd_setpos(0, 6);
+    lcd_int(read());
+  }
+  return 0;
+}
