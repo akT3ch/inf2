@@ -2,6 +2,7 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "lcd.h"
+
 #define BUFFER 30
 
 char rbuffer[BUFFER];
@@ -36,7 +37,7 @@ int main(void) //()
     UCSRA = 0;                // bit gesetzt =0 wenn nicht gesetz
     UCSRB = (1 << RXCIE) | (1 << RXEN) | (1 << TXEN); //TX, RX einschalten
 
-    UCSRC = (1 << URSEL) | (1 << UCSZ1) | (1 << UCSZ0);
+    UCSRC = (1 << URSEL) | (1 << UCSZ1) | (1 << UCSZ0); //Set frame format (8 data, 2 stop bits)
     UBRRH = 0;
     UBRRL = 51;    
     sei();                    
