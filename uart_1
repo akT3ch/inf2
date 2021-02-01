@@ -9,21 +9,18 @@ char rbuffer[BUFFER];
 volatile uint8_t zEin = 0;
 volatile uint8_t zAus = 0;
 
-void USART_Transmit(unsigned char data)
-{
-    while (!(UCSRA & (1 << UDRE)))
-        ;
+void USART_Transmit(unsigned char data){
+    while (!(UCSRA & (1 << UDRE)));
     UDR = data;
 }
 
-unsigned char USART_Receive(void)
-{
-    while (!(UCSRA & (1 << RXC)))
-        ;
+unsigned char USART_Receive(void){
+    while (!(UCSRA & (1 << RXC)));
     return UDR;
 }
 
 ISR(USART_RXC_vect){
+    rbuffer[zEin] == USART_Receive();
     zEin++;
     if(zEin == BUFFER)
         zEin = 0;
@@ -31,26 +28,25 @@ ISR(USART_RXC_vect){
         USART_Transmit('*');
 }
 
-int main(void) //()
-{
+int main(void){
     lcd_init();
-    UCSRA = 0;                // bit gesetzt =0 wenn nicht gesetz
-    UCSRB = (1 << RXCIE) | (1 << RXEN) | (1 << TXEN); //TX, RX einschalten
+    sei();
 
+    UCSRA = (1<<U2X);                // bit gesetzt =0 wenn nicht gesetz
+    UCSRB = (1 << RXCIE) | (1 << RXEN) | (1 << TXEN); //TX, RX einschalten
     UCSRC = (1 << URSEL) | (1 << UCSZ1) | (1 << UCSZ0); //Set frame format (8 data, 2 stop bits)
     UBRRH = 0;
-    UBRRL = 51;    
-    sei();                    
-    USART_Transmit('#');                 
-    while (1)
-    {
-        if(zEin != zAus)
-        {
+    UBRRL = 68;
+    sei();
+
+    while (1){
+        if(zEin != zAus){
             lcd_data(rbuffer[zAus]);
             zAus++;
+
+            if(zAus == BUFFER)
+                zAus = 0;
         }
-        if(zAus == BUFFER)
-            zAus = 0;
     }
     return 0;
 }
