@@ -1,0 +1,71 @@
+#include <avr/io.h>       		
+#include <avr/interrupt.h>		
+#include <util/delay.h>			
+#include "lcd.h"			
+#define BUFSIZE 8
+
+			
+char rbuffer[BUFSIZE];			
+volatile uint8_t z_ein=0, z_aus=0;	
+		
+
+void USART_Transmit(unsigned char data)	
+{					
+    while(!(UCSRA & (1<<UDRE)));	
+    UDR = data;				
+}					
+void USART_Transmit_string(char s[])	123?
+{					123?
+	int i =0;			123?
+	while (s[i] != 0x00)		123?
+	{				123?
+		USART_Transmit(s[i]);	123?
+		i++;			123?
+	}				123?
+}					123?
+unsigned char USART_Receive(void)	
+{					
+    while (!(UCSRA & (1<<RXC)));	
+    return UDR;				
+}					
+
+				
+ISR(USART_RXC_vect)			
+{
+//USART_TRANSMIT(USART_Receive());//oderUSART_TRANSMIT(UDR)     erst
+//lcd_data(UDR);						dann					
+    rbuffer[z_ein] = UDR;		
+    z_ein++;			
+    if(z_ein == BUFSIZE) z_ein=0;	
+}					
+
+
+int main(void)//()				
+{					
+//9600 8 N 1
+    lcd_init();
+	//lcd_string("  ");					
+    UCSRA = (1 << U2X);// bit gesetzt =0 wenn nicht gesetz			
+   
+
+    UCSRB = (1<<RXCIE) | (1<<RXEN) | (1<<TXEN); //TEIL2 und 3	
+    UCSRC = (1<<URSEL) | (1<<UCSZ1) | (1<<UCSZ2);		
+    UBRRH = 0;							
+    UBRRL = 103;// 51 wenn nicht gesetzt						
+    sei(); 					
+    USART_Transmit('#'); //TEIL1				
+    USART_Transmit_string("25.01.2021"); //TEIL1		
+    while(1)							
+    {									
+       
+	//lcd_data(USART_Receive());		erst		2
+    //TEIL2 und 3
+        if(z_ein != z_aus)					3
+    {								3
+        lcd_data(rbuffer[z_aus]);				3
+        z_aus++;						3
+        if(z_aus == BUFSIZE) z_aus=0;				3
+    }								3
+    //TEIL2 und 3 ENDE
+    }								123
+}

@@ -1,0 +1,40 @@
+#include <avr/io.h>       		
+		
+#include <util/delay.h>			
+#
+
+
+void USART_Transmit(unsigned char data)	
+{					
+    while(!(UCSRA & (1<<UDRE)));	
+    UDR = data;				
+}					
+
+unsigned char USART_Receive(void)	
+{					
+    while (!(UCSRA & (1<<RXC)));	
+    return UDR;				
+}					
+
+
+
+
+
+int main(void)//()			
+{					
+//9600 8 N 1	
+    UCSRA = (1 << U2X);// bit gesetzt =0 wenn nicht gesetz			
+    UCSRB = (1<<RXEN) | (1<<TXEN);  //TEIL1			
+
+    UCSRC = (1<<URSEL) | (1<<UCSZ1) | (1<<UCSZ2);		
+    UBRRH = 0;							
+    UBRRL = 103;// 51 wenn nicht gesetzt			
+    USART_Transmit('#'); //TEIL1				
+    USART_Transmit_string("25.01.2021"); //TEIL1		
+    while(1)							
+    {									
+        USART_Transmit(USART_Receive()); //TEIL1		
+	
+
+    }								
+}
