@@ -7,7 +7,7 @@ uint8_t read(void)
   ADCSRA |= (1 << ADSC);
   while (!(ADCSRA & (1 << ADIF)))
     ;
-  return 5 / 255 * ADCH * 100; // statt 5/255*100 ist auch 2 moeglich
+  return ADCH * 2;
 }
 
 int main(void)
